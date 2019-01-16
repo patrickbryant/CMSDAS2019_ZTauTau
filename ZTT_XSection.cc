@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
 
   //add the histrograms of lepton and tau visible mass (both for opposite sign and same sign pair )
-  EventHisto basicselection("BasicSelection");
+  EventHisto basicselection("BasicSelection",doMuon);
 
 
   TTree *Run_Tree = (TTree*) myFile->Get("EventTree");
@@ -187,10 +187,7 @@ int main(int argc, char** argv) {
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
     float eventWeight       = LumiWeight*PUWeight;
 
-    if( doMuon )
-      basicselection.Fill( itau, iLep , -1 , evtweight );
-    else 
-      basicselection.Fill( itau, -1, iLep, evtweight );
+    basicselection.Fill( itau, iLep, evtweight );
 
   } //End Event Loop
 

@@ -1,28 +1,28 @@
 #ifndef  HISTOGRAMMGR
 #define HISTOGRAMMGR
 
-#include <string> 
+#include <string>
 #include <TH1D.h>
 #include "TreeReader.h"
 
 class EventHisto {
 public:
-  EventHisto( const std::string& );
+  EventHisto( const std::string& cutlevel, const bool );
   ~EventHisto();
 
   // Selected Tau, Muon and Electron index (leave -1 is not of this channel)
-  void Fill( 
-      const int tau, 
-      const int muon, 
-      const int elec,
+  void Fill(
+      const int tau,
+      const int iLep,
       const double evtweight );
 
   void Write();
 
 private:
   const std::string cutlevel;
+  const bool doMuon ;
   std::map<std::string, TH1D> histmap;
-  void defineHist( 
+  void defineHist(
     const std::string& xname,
     const std::string& xtitle,
     const std::string& xunit,
@@ -30,12 +30,18 @@ private:
     const double       xmin,
     const double       xmax
   );
+
+  std::string histname(
+    const std::string& name,
+    const bool tauiso,
+    const bool os
+    );
 };
 
 /** Begin Editing */
 
-EventHisto::EventHisto( const std::string& x ):
-  cutlevel(x+"_")
+EventHisto::EventHisto( const std::string& x, const bool y ):
+  cutlevel(x), doMuon(y)
 {
   defineHist("visMass", "visible mass", "GeV", 30 , 0 , 300  );
   defineHist("visPt", "visible Pt", "GeV", 30 , 0 , 300  );
@@ -49,31 +55,36 @@ EventHisto::EventHisto( const std::string& x ):
   defineHist("LepTMass", "Lepton Transverse Mass", "GeV", 25, 0, 50 );
 }
 
-void EventHisto::Fill( const int tau, const int mu, const int ele, const double evtweight )
+void EventHisto::Fill( const int tau, const int iLep, const double evtweight )
 {
-  static const double muMass = 0.10565837; 
+  static const double muMass = 0.10565837;
   static const double elMass = 0.000511  ;
-  TLorentzVector tauP4, lepP4; 
-  if( tau >= 0 )  tauP4.SetPtEtaPhiM( tauPt->at(tau), tauEta->at(tau), tauPhi->at(tau), tauMass->at(tau) );
-  if( mu  >= 0 )  lepP4.SetPtEtaPhiM( muPt->at(mu), muEta->at(mu), muPhi->at(mu), muMass );
-  if( ele >= 0 )  lepP4.SetPtEtaPhiM( elePt->at(ele), eleEta->at(ele), elePhi->at(ele), elMass );
-  const TLorentzVector zP4 = tauP4 + lepP4; 
-  const std::string xs = 
-    ( ele >= 0 && (eleCharge->at(ele) * tauCharge->at(tau)) > 0 ) ? "SS" : 
-    ( ele >= 0 ) ? "OS"  : 
-    ( muCharge->at(mu) * tauCharge->at(tau)  > 0 ) ? "SS" : "OS";
 
-  // Begin filling 
-  histmap[cutlevel + "visMass" + xs ].Fill( zP4.M(), evtweight ); 
-  histmap[cutlevel + "visPt"  + xs ].Fill( zP4.Pt(), evtweight ); 
-  histmap[cutlevel + "visEta" + xs ].Fill( zP4.Eta(), evtweight );
+  TLorentzVector tauP4, lepP4;
+  tauP4.SetPtEtaPhiM( tauPt->at(tau), tauEta->at(tau), tauPhi->at(tau), tauMass->at(tau) );
+  if( doMuon )
+    lepP4.SetPtEtaPhiM( muPt->at(iLep), muEta->at(iLep), muPhi->at(iLep), muMass );
+  else
+    lepP4.SetPtEtaPhiM( elePt->at(iLep), eleEta->at(iLep), elePhi->at(iLep), elMass );
+  const TLorentzVector zP4 = tauP4 + lepP4;
+
+  const bool tauiso = tauByTightIsolationMVArun2v1DBoldDMwLT ->at(tau) < 0.5 ;
+  const bool os =
+    doMuon ?  ( muCharge->at(iLep) * tauCharge->at(tau)  < 0 ) :
+              ( eleCharge->at(iLep) * tauCharge->at(tau)  < 0 ) ;
+
+
+  // Begin filling
+  histmap[histname("visMass",tauiso,os)].Fill( zP4.M(), evtweight );
+  histmap[histname("visPt"  ,tauiso,os)].Fill( zP4.Pt(), evtweight );
+  histmap[histname("visEta" ,tauiso,os)].Fill( zP4.Eta(), evtweight );
 
   // TBC
 }
 
 /** Don't Edit After this! */
 
-void EventHisto::defineHist( 
+void EventHisto::defineHist(
     const std::string& xname,
     const std::string& xtitle,
     const std::string& xunit,
@@ -87,6 +98,18 @@ void EventHisto::defineHist(
   histmap[ssname] = TH1D( ssname.c_str(), ssname.c_str(), nbins, xmin, xmax );
 }
 
+std::string EventHisto::histname(
+  const std::string& x,
+  const bool tauiso,
+  const bool os
+)
+{
+  const std::string tauisostr = tauiso ? "Iso" : "antiIso" ;
+  const std::string osstr     = os ? "OS" : "SS";
+  return cutlevel + "_" + x + "_" + tauisostr + "_" + osstr ;
+}
+
+
 void EventHisto::Write()
 {
   for( const auto& hist : histmap ){
@@ -94,6 +117,6 @@ void EventHisto::Write()
   }
 }
 
-EventHisto::~EventHisto() {} 
+EventHisto::~EventHisto() {}
 
-#endif 
+#endif
