@@ -188,15 +188,15 @@ int main(int argc, char** argv) {
     float eventWeight       = LumiWeight*PUWeight;
 
     if( doMuon )
-      basicselection.Fill( itau, iLep , -1 , evtweight );
+      basicselection.Fill( itau, iLep , -1 , eventWeight );
     else 
-      basicselection.Fill( itau, -1, iLep, evtweight );
+      basicselection.Fill( itau, -1, iLep, eventWeight );
 
   } //End Event Loop
 
   //end of analysis code, close and write histograms/file
   fout->cd();
-  basicselction.Write();
+  basicselection.Write();
   fout->Close();
 
   std::cout << "Done" << std::endl;
