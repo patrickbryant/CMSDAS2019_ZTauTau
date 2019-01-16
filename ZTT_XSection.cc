@@ -17,8 +17,9 @@ void initBranch(TTree *tree, std::string name, void *add){
 
 int GetPriMuon();
 int GetSecMuon();
-int GetTauID( const int );
+int GetTauMu( const int );
 TLorentzVector LeptonP4;
+TLorentzVector Tau4Momentum;
 
 int main(int argc, char** argv) {
   using namespace std;
@@ -140,8 +141,7 @@ int main(int argc, char** argv) {
     const int imu = GetPriMuon() ;
     if( imu <  0 ) { continue; }
     nPassMuon += 1;
-
-      
+ 
     //
     // Loose Muon selection for Z->mu mu veto
     //
@@ -151,26 +151,7 @@ int main(int argc, char** argv) {
     //
     //Now process Tau's
     //
-    const int tau = GetTauId();
-    TLorentzVector Tau4Momentum;
-    if(debug) std::cout<<"tau loop 1"<<std::endl;
-    for  (int itau=0 ; itau < nTau; itau++){
-      //check pt and eta
-      if(tauPt->at(itau) < 30 || fabs(tauEta->at(itau)) > 2.3) continue;
-
-      //Tau ID
-      if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
-      if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
-      if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
-      if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
-      Tau4Momentum.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
-      if(Tau4Momentum.DeltaR(Mu4Momentum) < 0.5) continue;
-      nSelTaus += 1;
-      tau = itau;
-    } // End of tau loop
-
-    // Only consider events with 1 tau candidate for now
-    if(nSelTaus != 1) continue;
+    const int tau = GetTauMu();
     nPassTau += 1;
 
     //Reject W+Jets
@@ -408,4 +389,28 @@ bool GetSecMuon( const int primu )
     if(OS) return false;
   }
   return true;
+}
+
+int GetTauMu( const int imu )
+{
+  int tau = -1;
+  if(debug) std::cout<<"tau loop 1"<<std::endl;
+  for  (int itau=0 ; itau < nTau; itau++){
+    //check pt and eta
+    if(tauPt->at(itau) < 30 || fabs(tauEta->at(itau)) > 2.3) continue;
+
+    //Tau ID
+    if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
+    if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
+    if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
+    if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
+    Tau4Momentum.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
+    if(Tau4Momentum.DeltaR(Mu4Momentum) < 0.5) continue;
+    nSelTaus += 1;
+    tau = itau;
+  } // End of tau loop
+
+  // Only consider events with 1 tau candidate for now
+  if(nSelTaus != 1) return -1;
+  return tau;
 }
