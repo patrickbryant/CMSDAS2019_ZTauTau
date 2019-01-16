@@ -16,9 +16,9 @@ void initBranch(TTree *tree, std::string name, void *add){
 }
 
 int  GetPriMuon();
-bool GetSecMuon(const int primu);
-int GetPriElec();
-int HasSecElec( const int );
+bool HasSecMuon(int);
+int  GetPriElec();
+bool HasSecElec(int);
 int  GetTauID();
 bool GetBJets();
 
@@ -40,17 +40,21 @@ int main(int argc, char** argv) {
   TFile * myFile = TFile::Open(input.c_str());
   TH1F * HistoTot = (TH1F*) myFile->Get("hcount");
 
-  cout<<"nargs: "<<argc<<endl;
+  std::string flavor = *(argv + 3);
+  bool doMuon = true;
+  if(flavor == "electron") doMuon = false;
+  cout<<"Using Decay: tau -> "+flavor<<endl;
+
   bool splitTauTau = false;
   bool selTauTau = false;
-  if(argc>3){
+  if(argc>4){
     std::string splitTauTauString = *(argv + 3);
     std::string selTauTauString = *(argv + 4);
     splitTauTau = splitTauTauString == "1";
     selTauTau   = selTauTauString   == "1";
   }
 
-  if(argc>5){
+  if(argc>6){
     std::string debugString = *(argv + 5);
     debug = debugString == "1";
   }
@@ -90,10 +94,10 @@ int main(int argc, char** argv) {
 
   //cutflow counts
   int nPassTrigger = 0;
-  int nPassMuon    = 0;
+  int nPassLep    = 0;
   int nPassDYVeto  = 0;
   int nPassTau     = 0;
-  int nPassMuMET   = 0;
+  int nPassLepMET   = 0;
   int nPassBVeto   = 0;
 
   //keep track of processing time
@@ -125,7 +129,7 @@ int main(int argc, char** argv) {
     //
     //Trigger
     //
-    bool PassTrigger = (HLTEleMuX >> 19 & 1) == 1; //       else if (name.find("HLT_IsoMu24_v") != string::npos) bitEleMuX = 19;
+    bool PassTrigger = doMuon ? (HLTEleMuX >> 19 & 1) == 1 : (HLTEleMuX >> 0 & 1) == 1;
     if (!PassTrigger) continue;
     nPassTrigger += 1;
 
@@ -141,18 +145,19 @@ int main(int argc, char** argv) {
     }
 
     //
-    //Loop over muons to find number passing quality cuts.
+    // Choose Lepton Type
     //
-    const int imu = GetPriMuon();
-    if( imu <  0 ) { continue; }
-    nPassMuon += 1;
-    LeptonP4.SetPtEtaPhiM(muPt->at(imu),muEta->at(imu),muPhi->at(imu),MuMass);
+    const int iLep = doMuon ? GetPriMuon() : GetPriElec();
+    if( iLep <  0 ) { continue; }
+    nPassLep += 1;
 
-
-    //
-    // Loose Muon selection for Z->mu mu veto
-    //
-    if( !GetSecMuon(imu) ) { continue; }
+    if(doMuon){
+      LeptonP4.SetPtEtaPhiM(muPt->at(iLep),muEta->at(iLep),muPhi->at(iLep),MuMass);
+      if( HasSecMuon(iLep) ) { continue; }
+    }else{
+      LeptonP4.SetPtEtaPhiM(elePt->at(iLep),eleEta->at(iLep),elePhi->at(iLep),eleMass);
+      if( HasSecElec(iLep) ) { continue; }
+    }
     nPassDYVeto += 1;
 
     //
@@ -166,21 +171,26 @@ int main(int argc, char** argv) {
         tauMass->at(itau));
 
     //Reject W+Jets
-    float LepMetTranverseMass = TMass_F(muPt->at(imu), muPt->at(imu)*cos(muPhi->at(imu)),muPt->at(imu)*sin(muPhi->at(imu)) ,  pfMET, pfMETPhi);
+    float LepMetTranverseMass;
+    if(doMuon){
+      LepMetTranverseMass = TMass_F(muPt->at(iLep), muPt->at(iLep)*cos(muPhi->at(iLep)),muPt->at(iLep)*sin(muPhi->at(iLep)) ,  pfMET, pfMETPhi);
+    }else{
+      LepMetTranverseMass = TMass_F(elePt->at(iLep), elePt->at(iLep)*cos(elePhi->at(iLep)),elePt->at(iLep)*sin(elePhi->at(iLep)) ,  pfMET, pfMETPhi);
+    }
     if(LepMetTranverseMass > 40) { continue; }
-    nPassMuMET += 1;
+    nPassLepMET += 1;
 
     //ttbar veto with bjet veto
     if(GetBJets()) { continue; }
     nPassBVeto += 1;
 
     // Check charge of the lepton and Taus
-    bool OS = muCharge->at(imu) * tauCharge->at(itau) < 0;
-    bool SS = muCharge->at(imu) * tauCharge->at(itau) > 0;
+    bool OS = doMuon ? (muCharge->at(iLep) * tauCharge->at(itau) < 0) : (eleCharge->at(iLep) * tauCharge->at(itau) < 0);
+    bool SS = !OS;
 
     // Construct the visible mu+tau system
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
-    float eventWeight = LumiWeight*PUWeight;
+    float eventWeight       = LumiWeight*PUWeight;
 
     //Check if there is an OS  muTau pair with dR > 0.5 and TMass(mu.MET) < 40 and then fill the weighted histogram as below:
     if(OS)
@@ -202,10 +212,10 @@ int main(int argc, char** argv) {
 
   std::cout << "Done" << std::endl;
   std::cout << "nPassTrigger: " << nPassTrigger << std::endl;
-  std::cout << "nPassMuon: " << nPassMuon << std::endl;
+  std::cout << "nPassLep: " << nPassLep << std::endl;
   std::cout << "nPassDYVeto: " << nPassDYVeto << std::endl;
   std::cout << "nPassTau: " << nPassTau << std::endl;
-  std::cout << "nPassMuMET: " << nPassMuMET << std::endl;
+  std::cout << "nPassLepMET: " << nPassLepMET << std::endl;
   std::cout << "nPassBVeto: " << nPassBVeto << std::endl;
 
 }
@@ -364,7 +374,7 @@ int GetPriMuon()
   return -1;
 }
 
-bool GetSecMuon( const int primu )
+bool HasSecMuon( int primu )
 {
   bool passDYVeto = true;
   if(debug) std::cout<<"muon loop 2"<<std::endl;
@@ -382,9 +392,9 @@ bool GetSecMuon( const int primu )
 
     //Only worry about the second muon if it is opposite sign of the main muon
     bool OS = muCharge->at(imu) * muCharge->at(primu) < 0;
-    if(OS) return false;
+    if(OS) return true;
   }
-  return true;
+  return false;
 }
 
 //veto events with bjets passing our quality/overlap cuts
@@ -422,7 +432,7 @@ int GetPriElec()
   return -1;
 }
 
-bool GetSecElec( const int selectedEle )
+bool HasSecElec( int selectedEle )
 {
   for( int i = 0 ; i < nEle ; ++i ){
     const bool passid =
