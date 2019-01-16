@@ -17,6 +17,8 @@ void initBranch(TTree *tree, std::string name, void *add){
 
 int GetPriMuon();
 int GetSecMuon();
+int GetPriElec();
+int HasSecElec( const int );
 int GetTauMu( const int );
 TLorentzVector LeptonP4;
 TLorentzVector Tau4Momentum;
@@ -414,3 +416,50 @@ int GetTauMu( const int imu )
   if(nSelTaus != 1) return -1;
   return tau;
 }
+
+int GetPriElec()
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    if( elePt->at(i) < 30 ) continue;
+    if( fabs(eleSCEta->at(i) ) > 2.1 ) continue;
+
+    const bool passid = 
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true : 
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true : 
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( !passid ) continue; 
+   
+    if( fabs(eleD0->at(iele)) > 0.045 ) continue; 
+    if( fabs(eleDz->at(iele)) < 0.2  ) continue;
+
+    return i;
+  }
+
+  return -1;
+}
+
+bool HasSecElec( const int selectedEle )
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    if( i == selectedEle ) continue;
+    if( elePt->at(i) < 15 ) continue;
+    if( fabs(eleSCEta->at(i) ) > 2.4 ) continue;
+    if( fabs(eleD0->at(iele)) > 0.045 ) continue; 
+    if( fabs(eleDz->at(iele)) < 0.2  ) continue;
+     
+    const bool passid =
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( !passid ) { continue; } 
+
+    if( elCharge->at(i) * elCharge->at(selectedEle) > 0 ) continue false;
+      
+    return true;
+  }
+
+  return false;
+}
+
