@@ -402,3 +402,42 @@ bool GetBJets()
   }
   return false;
 }
+
+int GetPriElec()
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    const bool passid =
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( passid
+        && elePt->at(i) > 30
+        && fabs(eleSCEta->at(i) ) < 2.1
+      ){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+bool GetSecElec( const int selectedEle )
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    const bool passid =
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( passid
+        && elePt->at(i) > 30 && fabs(eleSCEta->at(i) ) < 2.1
+        && i!= selectedEle
+        && eleCharge->at(i) * eleCharge->at(selectedEle) < 0
+      ){
+      return true;
+    }
+  }
+
+  return false;
+}
