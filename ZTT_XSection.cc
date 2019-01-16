@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
     float eventWeight       = LumiWeight*PUWeight;
 
-    basicselection.Fill( itau, iLep, evtweight );
+    basicselection.Fill( itau, iLep, eventWeight );
 
   } //End Event Loop
 
@@ -330,7 +330,7 @@ int GetTauID()
       if(tauByLooseMuonRejection3               ->at(itau) < 0.5) continue;
       if(tauByMVA6TightElectronRejection        ->at(itau) < 0.5) continue;
     }
-    if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
+    //if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
     TauP4.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
     if(TauP4.DeltaR(LeptonP4) < 0.5) continue;
     nSelTaus += 1;
