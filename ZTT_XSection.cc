@@ -15,6 +15,11 @@ void initBranch(TTree *tree, std::string name, void *add){
   tree->SetBranchAddress(bname, add);
 }
 
+int GetPriMuon();
+int GetSecMuon();
+int GetTauID( const int );
+TLorentzVector LeptonP4;
+
 int main(int argc, char** argv) {
   using namespace std;
 
@@ -132,61 +137,21 @@ int main(int argc, char** argv) {
     //
     //Loop over muons to find number passing quality cuts. 
     //
-    int nSelMuons = 0;
-    int mu;
-    TLorentzVector Mu4Momentum;
-    if(debug) std::cout<<"muon loop 1"<<std::endl;
-    for  (int imu=0 ; imu < nMu; imu++){
-      //check pt and eta
-      if(muPt->at(imu) < 30 || fabs(muEta->at(imu)) > 2.1) continue;
-
-      //compute isolation
-      float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
-      if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
-	IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
-      //check isolation
-      if(IsoMu > 0.15) continue;
-
-      //Check Muon ID
-      if( !(muIDbit->at(imu)>>2 & 1)) continue; // 2 is tight
-      nSelMuons += 1;
-      mu = imu;
-      if(debug) std::cout<<"found muon"<<std::endl;
-      Mu4Momentum.SetPtEtaPhiM(muPt->at(mu),muEta->at(mu),muPhi->at(mu),MuMass);
-    }
-    //Found at least one good muon
-    if(nSelMuons == 0) continue;
+    const int imu = GetPriMuon() ;
+    if( imu <  0 ) { continue; }
     nPassMuon += 1;
 
+      
     //
     // Loose Muon selection for Z->mu mu veto
     //
-    bool passDYVeto = true;
-    if(debug) std::cout<<"muon loop 2"<<std::endl;
-    for(int imu=0 ; imu < nMu; imu++){
-      if(imu == mu) continue; //skip the primary muon
-      if(muPt->at(imu) < 15 || fabs(muEta->at(imu)) > 2.4) continue;//this one doesnt need to satisfy the muon trigger, so have extended eta range and lower pt threshold
-
-      //compute isolation
-      float IsoMu2=muPFChIso->at(imu)/muPt->at(imu);
-      if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
-	IsoMu2= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
-      bool MuIdIso2=((muIDbit->at(imu) >> 0 & 1)  && IsoMu2 < 0.30 && fabs(muD0->at(imu)) < 0.045 && fabs(muDz->at(imu)) < 0.2);
-      if(!MuIdIso2) continue;
-
-      //Only worry about the second muon if it is opposite sign of the main muon
-      bool OS = muCharge->at(imu) * muCharge->at(mu) < 0;
-      if(OS) passDYVeto = false;
-    }
-    //Only consider events with one muon candidate
-    if(passDYVeto != 1) continue;
+    if( !GetSecMuon(imu) ) { continue; } 
     nPassDYVeto += 1;
 
     //
     //Now process Tau's
     //
-    int nSelTaus = 0;
-    int tau;
+    const int tau = GetTauId();
     TLorentzVector Tau4Momentum;
     if(debug) std::cout<<"tau loop 1"<<std::endl;
     for  (int itau=0 ; itau < nTau; itau++){
@@ -370,6 +335,77 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"pfMETPhi",&pfMETPhi);
   initBranch(tree,"metFilters",&metFilters);
   initBranch(tree,"genHT",&genHT);
- 
 
+}
+
+int GetTauId()
+{
+  TLorentzVector Tau4Momentum;
+  int nSelTaus = 0;
+  int tau;
+  for  (int itau=0 ; itau < nTau; itau++){
+    //check pt and eta
+    if(tauPt->at(itau) < 30 || fabs(tauEta->at(itau)) > 2.3) continue;
+
+    //Tau ID
+    if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
+    if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
+    if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
+    if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
+    Tau4Momentum.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
+    if(Tau4Momentum.DeltaR(Mu4Momentum) < 0.5) continue;
+    nSelTaus += 1;
+    tau = itau;
+  } // End of tau loop
+
+  // Only consider events with 1 tau candidate for now
+  if(nSelTaus != 1) return -1;
+  return tau;
+
+}
+
+int GetPriMuon()
+{
+  int nSelMuons = 0;
+  int mu;
+  TLorentzVector Mu4Momentum;
+  if(debug) std::cout<<"muon loop 1"<<std::endl;
+  for  (int imu=0 ; imu < nMu; imu++){
+    //check pt and eta
+    if(muPt->at(imu) < 30 || fabs(muEta->at(imu)) > 2.1) continue;
+
+    //compute isolation
+    float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
+    if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
+      IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
+    //check isolation
+    if(IsoMu > 0.15) continue;
+
+    //Check Muon ID
+    if( !(muIDbit->at(imu)>>2 & 1)) continue; // 2 is tight
+    return imu; 
+  }
+  return -1;
+}
+
+bool GetSecMuon( const int primu )
+{
+  bool passDYVeto = true;
+  if(debug) std::cout<<"muon loop 2"<<std::endl;
+  for(int imu=0 ; imu < nMu; imu++){
+    if(imu == primu) continue; //skip the primary muon
+    if(muPt->at(imu) < 15 || fabs(muEta->at(imu)) > 2.4) continue;//this one doesnt need to satisfy the muon trigger, so have extended eta range and lower pt threshold
+
+    //compute isolation
+    float IsoMu2=muPFChIso->at(imu)/muPt->at(imu);
+    if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
+      IsoMu2= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
+    bool MuIdIso2=((muIDbit->at(imu) >> 0 & 1)  && IsoMu2 < 0.30 && fabs(muD0->at(imu)) < 0.045 && fabs(muDz->at(imu)) < 0.2);
+    if(!MuIdIso2) continue;
+
+    //Only worry about the second muon if it is opposite sign of the main muon
+    bool OS = muCharge->at(imu) * muCharge->at(mu) < 0;
+    if(OS) return false;
+  }
+  return true;
 }
