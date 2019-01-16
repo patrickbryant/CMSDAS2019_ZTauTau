@@ -26,7 +26,8 @@ bool GetBJets();
 TLorentzVector LeptonP4;
 TLorentzVector TauP4;
 
-bool debug = false;
+bool doMuon = true;
+bool debug  = false;
 
 int main(int argc, char** argv) {
   using namespace std;
@@ -42,15 +43,14 @@ int main(int argc, char** argv) {
   TH1F * HistoTot = (TH1F*) myFile->Get("hcount");
 
   std::string flavor = *(argv + 3);
-  bool doMuon = true;
   if(flavor == "electron") doMuon = false;
   cout<<"Using Decay: tau -> "+flavor<<endl;
 
   bool splitTauTau = false;
   bool selTauTau = false;
-  if(argc>4){
-    std::string splitTauTauString = *(argv + 3);
-    std::string selTauTauString = *(argv + 4);
+  if(argc>5){
+    std::string splitTauTauString = *(argv + 4);
+    std::string selTauTauString = *(argv + 5);
     splitTauTau = splitTauTauString == "1";
     selTauTau   = selTauTauString   == "1";
   }
@@ -92,10 +92,10 @@ int main(int argc, char** argv) {
 
   //cutflow counts
   int nPassTrigger = 0;
-  int nPassLep    = 0;
+  int nPassLep     = 0;
   int nPassDYVeto  = 0;
   int nPassTau     = 0;
-  int nPassLepMET   = 0;
+  int nPassLepMET  = 0;
   int nPassBVeto   = 0;
 
   //keep track of processing time
@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
 
   //end of analysis code, close and write histograms/file
   fout->cd();
-  basicselction.Write();
+  basicselection.Write();
   fout->Close();
 
   std::cout << "Done" << std::endl;
@@ -323,8 +323,13 @@ int GetTauID()
 
     //Tau ID
     if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
-    if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
-    if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
+    if(doMuon){
+      if(tauByTightMuonRejection3               ->at(itau) < 0.5) continue;
+      if(tauByMVA6LooseElectronRejection        ->at(itau) < 0.5) continue;
+    }else{
+      if(tauByLooseMuonRejection3               ->at(itau) < 0.5) continue;
+      if(tauByMVA6TightElectronRejection        ->at(itau) < 0.5) continue;
+    }
     if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
     TauP4.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
     if(TauP4.DeltaR(LeptonP4) < 0.5) continue;
