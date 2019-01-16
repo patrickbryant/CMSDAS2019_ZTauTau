@@ -5,11 +5,13 @@ import numpy
 from sys import argv, exit, stdout, stderr
 import math
 
-if len(argv) < 2:
-   print 'Usage:python xs_calculator_prefit.py DYCrossSection[optional]'
+if len(argv) < 3:
+   print 'Usage:python xs_calculator_prefit.py InputDirectory DYCrossSection[optional]'
 
-if len(argv)>1:
-   FoundXS= numpy.array([argv[1]],dtype=float)
+dirName = argv[1]
+
+if len(argv)>2:
+   FoundXS= numpy.array([argv[2]],dtype=float)
 else:
    FoundXS=1.00
 
@@ -250,8 +252,6 @@ def xs_calculator(fileList = [], mass_low = 25, mass_high = 125, nbins = 50, var
 
     print 'DY->ll xs used: %.1f pb' %XS_OST
 
-dirName = '.'
-
 fileList = [('DY', '%s/DYJetsToTauTau.root' %dirName),
             ('ZLL', '%s/DYJetsToLL.root ' %dirName),
             ('TTJets', '%s/TTJets.root' %dirName),
@@ -259,7 +259,7 @@ fileList = [('DY', '%s/DYJetsToTauTau.root' %dirName),
            # ('ZLL', '%s/DYJetsToLL.root ' %dirName),
 #            ('Diboson', '%s/WZ.root' %dirName),
 #            ('Diboson', '%s/ZZ.root' %dirName),
-            ('data', '%s/SingleMu.root' %dirName),
+            ('data', '%s/data.root' %dirName),
             ]
 
 variableName = ""

@@ -38,6 +38,15 @@ To run muon analysis:
 >./ZTT_XSection.exe muon/DYJetsToLL.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root muon 1 0
 
 
+# Plot visible mass spectrum
+
+Usage: >python xs_calculator_prefit.py InputDirectory DYCrossSection[optional]
+
+> python xs_calculator_prefit_New.py electron
+
+> python xs_calculator_prefit_New.py muon
+
+
 # Input Files
 
 root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root

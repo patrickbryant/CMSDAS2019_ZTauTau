@@ -25,7 +25,8 @@ bool GetBJets();
 TLorentzVector LeptonP4;
 TLorentzVector TauP4;
 
-bool debug = false;
+bool doMuon = true;
+bool debug  = false;
 
 int main(int argc, char** argv) {
   using namespace std;
@@ -41,15 +42,14 @@ int main(int argc, char** argv) {
   TH1F * HistoTot = (TH1F*) myFile->Get("hcount");
 
   std::string flavor = *(argv + 3);
-  bool doMuon = true;
   if(flavor == "electron") doMuon = false;
   cout<<"Using Decay: tau -> "+flavor<<endl;
 
   bool splitTauTau = false;
   bool selTauTau = false;
-  if(argc>4){
-    std::string splitTauTauString = *(argv + 3);
-    std::string selTauTauString = *(argv + 4);
+  if(argc>5){
+    std::string splitTauTauString = *(argv + 4);
+    std::string selTauTauString = *(argv + 5);
     splitTauTau = splitTauTauString == "1";
     selTauTau   = selTauTauString   == "1";
   }
@@ -337,8 +337,13 @@ int GetTauID()
 
     //Tau ID
     if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
-    if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
-    if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
+    if(doMuon){
+      if(tauByTightMuonRejection3               ->at(itau) < 0.5) continue;
+      if(tauByMVA6LooseElectronRejection        ->at(itau) < 0.5) continue;
+    }else{
+      if(tauByLooseMuonRejection3               ->at(itau) < 0.5) continue;
+      if(tauByMVA6TightElectronRejection        ->at(itau) < 0.5) continue;
+    }
     if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
     TauP4.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
     if(TauP4.DeltaR(LeptonP4) < 0.5) continue;
