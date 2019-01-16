@@ -17,6 +17,8 @@ void initBranch(TTree *tree, std::string name, void *add){
 
 int  GetPriMuon();
 bool GetSecMuon(const int primu);
+int GetPriElec();
+int HasSecElec( const int );
 int  GetTauID();
 bool GetBJets();
 
@@ -29,10 +31,10 @@ int main(int argc, char** argv) {
   using namespace std;
 
   std::string out = *(argv + 1);
-    
+
   cout << "OUTPUT: " << out << endl;     //PRINTING THE OUTPUT FILE NAME
   TFile *fout = TFile::Open(out.c_str(), "RECREATE");
-    
+
   std::string input = *(argv + 2);
   cout << " INPUT: " << input << endl;     //PRINTING THE INPUT FILE NAME
   TFile * myFile = TFile::Open(input.c_str());
@@ -63,8 +65,8 @@ int main(int argc, char** argv) {
   TH1F *    visibleMassSS = new TH1F ("visibleMassSS","visibleMassSS", 30, 0, 300);
   visibleMassOS->SetDefaultSumw2();
   visibleMassSS->SetDefaultSumw2();
-    
-    
+
+
   TTree *Run_Tree = (TTree*) myFile->Get("EventTree");
   cout.setf(ios::fixed, ios::floatfield);
 
@@ -72,7 +74,7 @@ int main(int argc, char** argv) {
 
   float MuMass= 0.10565837;
   float eleMass= 0.000511;
-  
+
   //Luminosity
   float LumiWeight = 1;
   if (HistoTot) LumiWeight = weightCalc(HistoTot, input);
@@ -117,7 +119,7 @@ int main(int argc, char** argv) {
 	if(fabs(mcPID->at(igen)) == 15 && mcMomPID->at(igen)==23) numTau++;
       }
       if( selTauTau && (numTau < 1)) continue; // uncomment this line to get Ztautau contribution of DY
-      if(!selTauTau && (numTau > 1)) continue; // uncomment this line to get Zll contribution of DY 
+      if(!selTauTau && (numTau > 1)) continue; // uncomment this line to get Zll contribution of DY
     }
 
     //
@@ -139,18 +141,18 @@ int main(int argc, char** argv) {
     }
 
     //
-    //Loop over muons to find number passing quality cuts. 
+    //Loop over muons to find number passing quality cuts.
     //
     const int imu = GetPriMuon();
     if( imu <  0 ) { continue; }
     nPassMuon += 1;
     LeptonP4.SetPtEtaPhiM(muPt->at(imu),muEta->at(imu),muPhi->at(imu),MuMass);
 
-      
+
     //
     // Loose Muon selection for Z->mu mu veto
     //
-    if( !GetSecMuon(imu) ) { continue; } 
+    if( !GetSecMuon(imu) ) { continue; }
     nPassDYVeto += 1;
 
     //
@@ -159,10 +161,12 @@ int main(int argc, char** argv) {
     const int itau = GetTauID();
     if( itau <  0 ) { continue; }
     nPassTau += 1;
-    TauP4.SetPtEtaPhiM(muPt->at(imu),muEta->at(imu),muPhi->at(imu),MuMass);
+    TauP4.SetPtEtaPhiM(
+        tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),
+        tauMass->at(itau));
 
     //Reject W+Jets
-    float LepMetTranverseMass = TMass_F(muPt->at(imu), muPt->at(imu)*cos(muPhi->at(imu)),muPt->at(imu)*sin(muPhi->at(imu)) ,  pfMET, pfMETPhi);      
+    float LepMetTranverseMass = TMass_F(muPt->at(imu), muPt->at(imu)*cos(muPhi->at(imu)),muPt->at(imu)*sin(muPhi->at(imu)) ,  pfMET, pfMETPhi);
     if(LepMetTranverseMass > 40) { continue; }
     nPassMuMET += 1;
 
@@ -221,7 +225,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"HLTEleMuX", &HLTEleMuX);
   initBranch(tree,"puTrue", &puTrue);
   initBranch(tree,"nVtx",&nVtx);
-        
+
   //########################################   MC Info
   initBranch(tree,"nMC", &nMC);
   initBranch(tree,"mcPID", &mcPID);
@@ -233,7 +237,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"mcMass", &mcMass );
   initBranch(tree,"mcMomPID", &mcMomPID );
   initBranch(tree,"mcGMomPID", &mcGMomPID );
-        
+
   //########################################   Tau Info
   initBranch(tree,"nTau", &nTau);
   initBranch(tree,"tauPt"  ,&tauPt);
@@ -257,7 +261,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"tauByLooseIsolationMVArun2v1DBoldDMwLT",&tauByLooseIsolationMVArun2v1DBoldDMwLT);
   initBranch(tree,"tauByVLooseIsolationMVArun2v1DBoldDMwLT",&tauByVLooseIsolationMVArun2v1DBoldDMwLT);
   initBranch(tree,"tauByTightIsolationMVArun2v1DBoldDMwLT",&tauByTightIsolationMVArun2v1DBoldDMwLT);
-        
+
   //########################################   Mu Info
   initBranch(tree,"nMu", &nMu);
   initBranch(tree,"muPt"  ,&muPt);
@@ -272,7 +276,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"muPFPUIso", &muPFPUIso);
   initBranch(tree,"muD0",&muD0);
   initBranch(tree,"muDz",&muDz);
-        
+
   //########################################   Ele Info
   initBranch(tree,"nEle", &nEle);
   initBranch(tree,"elePt"  ,&elePt);
@@ -291,7 +295,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"eleMissHits", &eleMissHits);
   initBranch(tree,"eleConvVeto", &eleConvVeto);
   initBranch(tree,"eleSCEta", &eleSCEta );
-        
+
   //########################################   Jet Info
   initBranch(tree,"nJet",&nJet);
   initBranch(tree,"jetPt",&jetPt);
@@ -304,7 +308,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"jetJECUnc",&jetJECUnc);
   initBranch(tree,"jetRawEn",&jetRawEn);
   initBranch(tree,"jetHadFlvr",&jetHadFlvr);
-        
+
   //########################################   MET Info
   initBranch(tree,"pfMET",&pfMET);
   initBranch(tree,"pfMETPhi",&pfMETPhi);
@@ -355,7 +359,7 @@ int GetPriMuon()
 
     //Check Muon ID
     if( !(muIDbit->at(imu)>>1 & 1)) continue; // 2 is tight, 1 is medium
-    return imu; 
+    return imu;
   }
   return -1;
 }
@@ -396,5 +400,44 @@ bool GetBJets()
     if(jetCSV2BJetTags->at(ijet) < 0.8484) continue;//btag
     return true;
   }
+  return false;
+}
+
+int GetPriElec()
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    const bool passid =
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( passid
+        && elePt->at(i) > 30
+        && fabs(eleSCEta->at(i) ) < 2.1
+      ){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+bool GetSecElec( const int selectedEle )
+{
+  for( int i = 0 ; i < nEle ; ++i ){
+    const bool passid =
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
+      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      false;
+    if( passid
+        && elePt->at(i) > 30 && fabs(eleSCEta->at(i) ) < 2.1
+        && i!= selectedEle
+        && eleCharge->at(i) * eleCharge->at(selectedEle) < 0
+      ){
+      return true;
+    }
+  }
+
   return false;
 }
