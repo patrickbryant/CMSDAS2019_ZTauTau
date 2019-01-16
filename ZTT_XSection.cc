@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "TreeReader.h"
 #include "WeightCalculator.h"
+#include "HistogramMgr.h"
 #include <string> //remove space for successful compilation
 #include <ostream> //remove space for successful compilation
 #include <ctime>
@@ -65,10 +66,7 @@ int main(int argc, char** argv) {
 
 
   //add the histrograms of lepton and tau visible mass (both for opposite sign and same sign pair )
-  TH1F *    visibleMassOS = new TH1F ("visibleMassOS","visibleMassOS", 30, 0, 300);
-  TH1F *    visibleMassSS = new TH1F ("visibleMassSS","visibleMassSS", 30, 0, 300);
-  visibleMassOS->SetDefaultSumw2();
-  visibleMassSS->SetDefaultSumw2();
+  EventHisto basicselection("BasicSelection");
 
 
   TTree *Run_Tree = (TTree*) myFile->Get("EventTree");
@@ -184,30 +182,21 @@ int main(int argc, char** argv) {
     if(GetBJets()) { continue; }
     nPassBVeto += 1;
 
-    // Check charge of the lepton and Taus
-    bool OS = doMuon ? (muCharge->at(iLep) * tauCharge->at(itau) < 0) : (eleCharge->at(iLep) * tauCharge->at(itau) < 0);
-    bool SS = !OS;
 
     // Construct the visible mu+tau system
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
     float eventWeight       = LumiWeight*PUWeight;
 
-    //Check if there is an OS  muTau pair with dR > 0.5 and TMass(mu.MET) < 40 and then fill the weighted histogram as below:
-    if(OS)
-      visibleMassOS->Fill(LepTauP4.M(), eventWeight);
-
-    //Check if there is a SS  muTau pair with dR > 0.5 and TMass(mu.MET) < 40 and then fill the weighted histogram as below:
-    if(SS)
-      visibleMassSS->Fill(LepTauP4.M(), eventWeight);
+    if( doMuon )
+      basicselection.Fill( itau, iLep , -1 , evtweight );
+    else 
+      basicselection.Fill( itau, -1, iLep, evtweight );
 
   } //End Event Loop
 
   //end of analysis code, close and write histograms/file
   fout->cd();
-  visibleMassOS->Write();
-  visibleMassSS->Write();
-  //visibleMassOSRelaxedTauIso->Write();
-  //visibleMassSSRelaxedTauIso->Write();
+  basicselction.Write();
   fout->Close();
 
   std::cout << "Done" << std::endl;
