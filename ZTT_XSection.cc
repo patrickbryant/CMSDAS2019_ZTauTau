@@ -15,10 +15,15 @@ void initBranch(TTree *tree, std::string name, void *add){
   tree->SetBranchAddress(bname, add);
 }
 
-int GetPriMuon();
-int GetSecMuon();
-int GetTauID( const int );
+int  GetPriMuon();
+bool GetSecMuon(const int primu);
+int  GetTauID();
+bool GetBJets();
+
 TLorentzVector LeptonP4;
+TLorentzVector TauP4;
+
+bool debug = false;
 
 int main(int argc, char** argv) {
   using namespace std;
@@ -43,7 +48,6 @@ int main(int argc, char** argv) {
     selTauTau   = selTauTauString   == "1";
   }
 
-  bool debug = false;
   if(argc>5){
     std::string debugString = *(argv + 5);
     debug = debugString == "1";
@@ -54,7 +58,7 @@ int main(int argc, char** argv) {
   std::cout<<"debug "<<debug<<std::endl;
 
 
-  //add the histrograms of muon and tau visible mass (both for opposite sign and same sign pair )
+  //add the histrograms of lepton and tau visible mass (both for opposite sign and same sign pair )
   TH1F *    visibleMassOS = new TH1F ("visibleMassOS","visibleMassOS", 30, 0, 300);
   TH1F *    visibleMassSS = new TH1F ("visibleMassSS","visibleMassSS", 30, 0, 300);
   visibleMassOS->SetDefaultSumw2();
@@ -137,9 +141,10 @@ int main(int argc, char** argv) {
     //
     //Loop over muons to find number passing quality cuts. 
     //
-    const int imu = GetPriMuon() ;
+    const int imu = GetPriMuon();
     if( imu <  0 ) { continue; }
     nPassMuon += 1;
+    LeptonP4.SetPtEtaPhiM(muPt->at(imu),muEta->at(imu),muPhi->at(imu),MuMass);
 
       
     //
@@ -151,65 +156,35 @@ int main(int argc, char** argv) {
     //
     //Now process Tau's
     //
-    const int tau = GetTauId();
-    TLorentzVector Tau4Momentum;
-    if(debug) std::cout<<"tau loop 1"<<std::endl;
-    for  (int itau=0 ; itau < nTau; itau++){
-      //check pt and eta
-      if(tauPt->at(itau) < 30 || fabs(tauEta->at(itau)) > 2.3) continue;
-
-      //Tau ID
-      if(taupfTausDiscriminationByDecayModeFinding->at(itau) < 0.5) continue;
-      if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
-      if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
-      if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
-      Tau4Momentum.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
-      if(Tau4Momentum.DeltaR(Mu4Momentum) < 0.5) continue;
-      nSelTaus += 1;
-      tau = itau;
-    } // End of tau loop
-
-    // Only consider events with 1 tau candidate for now
-    if(nSelTaus != 1) continue;
+    const int itau = GetTauID();
+    if( itau <  0 ) { continue; }
     nPassTau += 1;
+    TauP4.SetPtEtaPhiM(muPt->at(imu),muEta->at(imu),muPhi->at(imu),MuMass);
 
     //Reject W+Jets
-    float MuMetTranverseMass= TMass_F(muPt->at(mu), muPt->at(mu)*cos(muPhi->at(mu)),muPt->at(mu)*sin(muPhi->at(mu)) ,  pfMET, pfMETPhi);      
-    if(MuMetTranverseMass > 40) continue;
+    float LepMetTranverseMass = TMass_F(muPt->at(imu), muPt->at(imu)*cos(muPhi->at(imu)),muPt->at(imu)*sin(muPhi->at(imu)) ,  pfMET, pfMETPhi);      
+    if(LepMetTranverseMass > 40) { continue; }
     nPassMuMET += 1;
 
     //ttbar veto with bjet veto
-    TLorentzVector Jet4Momentum;
-    std::vector<float> EveBJetPt;
-    EveBJetPt.clear();
-    for (int ijet= 0 ; ijet < nJet ; ijet++){
-      Jet4Momentum.SetPtEtaPhiE(jetPt->at(ijet),jetEta->at(ijet),jetPhi->at(ijet),jetRawEn->at(ijet));
-      if(     jetPt ->at(ijet)  < 20) continue;//jet Pt
-      if(fabs(jetEta->at(ijet)) > 2.5) continue;//jet Eta
-      if(Jet4Momentum.DeltaR(Tau4Momentum) < 0.5) continue;//Tau Overlap
-      if(Jet4Momentum.DeltaR( Mu4Momentum) < 0.5) continue;//Muon Overlap
-      if(jetCSV2BJetTags->at(ijet) < 0.8484) continue;//btag
-      EveBJetPt.push_back(jetPt->at(ijet));
-    }
-    //veto events with bjets passing our quality/overlap cuts
-    if(EveBJetPt.size()>0) continue;
+    if(GetBJets()) { continue; }
     nPassBVeto += 1;
 
-    // Check charge of the muon and Taus
-    bool  OS = muCharge->at(mu) * tauCharge->at(tau) < 0;
-    bool  SS = muCharge->at(mu) * tauCharge->at(tau) > 0;
+    // Check charge of the lepton and Taus
+    bool OS = muCharge->at(imu) * tauCharge->at(itau) < 0;
+    bool SS = muCharge->at(imu) * tauCharge->at(itau) > 0;
 
     // Construct the visible mu+tau system
-    TLorentzVector MuTau4Momentum = Mu4Momentum + Tau4Momentum;
+    TLorentzVector LepTauP4 = LeptonP4 + TauP4;
     float eventWeight = LumiWeight*PUWeight;
 
     //Check if there is an OS  muTau pair with dR > 0.5 and TMass(mu.MET) < 40 and then fill the weighted histogram as below:
     if(OS)
-      visibleMassOS->Fill(MuTau4Momentum.M(), eventWeight);
+      visibleMassOS->Fill(LepTauP4.M(), eventWeight);
 
     //Check if there is a SS  muTau pair with dR > 0.5 and TMass(mu.MET) < 40 and then fill the weighted histogram as below:
     if(SS)
-      visibleMassSS->Fill(MuTau4Momentum.M(), eventWeight);
+      visibleMassSS->Fill(LepTauP4.M(), eventWeight);
 
   } //End Event Loop
 
@@ -338,9 +313,8 @@ void registerBranches(TTree *tree) {
 
 }
 
-int GetTauId()
+int GetTauID()
 {
-  TLorentzVector Tau4Momentum;
   int nSelTaus = 0;
   int tau;
   for  (int itau=0 ; itau < nTau; itau++){
@@ -352,8 +326,8 @@ int GetTauId()
     if(tauByTightMuonRejection3                 ->at(itau) < 0.5) continue;
     if(tauByMVA6LooseElectronRejection          ->at(itau) < 0.5) continue;
     if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
-    Tau4Momentum.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
-    if(Tau4Momentum.DeltaR(Mu4Momentum) < 0.5) continue;
+    TauP4.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
+    if(TauP4.DeltaR(LeptonP4) < 0.5) continue;
     nSelTaus += 1;
     tau = itau;
   } // End of tau loop
@@ -366,13 +340,11 @@ int GetTauId()
 
 int GetPriMuon()
 {
-  int nSelMuons = 0;
-  int mu;
-  TLorentzVector Mu4Momentum;
   if(debug) std::cout<<"muon loop 1"<<std::endl;
   for  (int imu=0 ; imu < nMu; imu++){
     //check pt and eta
-    if(muPt->at(imu) < 30 || fabs(muEta->at(imu)) > 2.1) continue;
+    if(muPt->at(imu) < 30) continue;
+    if(fabs(muEta->at(imu)) > 2.1) continue;
 
     //compute isolation
     float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
@@ -382,7 +354,7 @@ int GetPriMuon()
     if(IsoMu > 0.15) continue;
 
     //Check Muon ID
-    if( !(muIDbit->at(imu)>>2 & 1)) continue; // 2 is tight
+    if( !(muIDbit->at(imu)>>1 & 1)) continue; // 2 is tight, 1 is medium
     return imu; 
   }
   return -1;
@@ -394,7 +366,8 @@ bool GetSecMuon( const int primu )
   if(debug) std::cout<<"muon loop 2"<<std::endl;
   for(int imu=0 ; imu < nMu; imu++){
     if(imu == primu) continue; //skip the primary muon
-    if(muPt->at(imu) < 15 || fabs(muEta->at(imu)) > 2.4) continue;//this one doesnt need to satisfy the muon trigger, so have extended eta range and lower pt threshold
+    if(muPt->at(imu) < 15) continue;
+    if(fabs(muEta->at(imu)) > 2.4) continue;//this one doesnt need to satisfy the muon trigger, so have extended eta range and lower pt threshold
 
     //compute isolation
     float IsoMu2=muPFChIso->at(imu)/muPt->at(imu);
@@ -404,8 +377,24 @@ bool GetSecMuon( const int primu )
     if(!MuIdIso2) continue;
 
     //Only worry about the second muon if it is opposite sign of the main muon
-    bool OS = muCharge->at(imu) * muCharge->at(mu) < 0;
+    bool OS = muCharge->at(imu) * muCharge->at(primu) < 0;
     if(OS) return false;
   }
   return true;
+}
+
+//veto events with bjets passing our quality/overlap cuts
+bool GetBJets()
+{
+  TLorentzVector Jet4Momentum;
+  for (int ijet= 0 ; ijet < nJet ; ijet++){
+    Jet4Momentum.SetPtEtaPhiE(jetPt->at(ijet),jetEta->at(ijet),jetPhi->at(ijet),jetRawEn->at(ijet));
+    if(     jetPt ->at(ijet)  < 20) continue;//jet Pt
+    if(fabs(jetEta->at(ijet)) > 2.5) continue;//jet Eta
+    if(Jet4Momentum.DeltaR(TauP4)    < 0.5) continue;//Tau Overlap
+    if(Jet4Momentum.DeltaR(LeptonP4) < 0.5) continue;//Lepton Overlap
+    if(jetCSV2BJetTags->at(ijet) < 0.8484) continue;//btag
+    return true;
+  }
+  return false;
 }
