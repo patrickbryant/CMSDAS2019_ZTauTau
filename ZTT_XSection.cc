@@ -94,10 +94,10 @@ int main(int argc, char** argv) {
 
   //cutflow counts
   int nPassTrigger = 0;
-  int nPassLep    = 0;
+  int nPassLep     = 0;
   int nPassDYVeto  = 0;
   int nPassTau     = 0;
-  int nPassLepMET   = 0;
+  int nPassLepMET  = 0;
   int nPassBVeto   = 0;
 
   //keep track of processing time

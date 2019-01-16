@@ -17,7 +17,7 @@ To run electron analysis:
 
 >./ZTT_XSection.exe electron/WJetsToLNu.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/WJetsToLNu_Inc.root electron
 
->./ZTT_XSection.exe electron/SingleEle.root   root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/SingleElectron.root electron
+>./ZTT_XSection.exe electron/data.root   root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/SingleElectron.root electron
 
 >./ZTT_XSection.exe electron/DYJetsToTauTau.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root electron 1 1
 
@@ -31,7 +31,7 @@ To run muon analysis:
 
 >./ZTT_XSection.exe muon/WJetsToLNu.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/WJetsToLNu_Inc.root muon
 
->./ZTT_XSection.exe SingleMu.root   root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/SingleMuon.root muon
+>./ZTT_XSection.exe muon/data.root   root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/SingleMuon.root muon
 
 >./ZTT_XSection.exe muon/DYJetsToTauTau.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root muon 1 1
 
