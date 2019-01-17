@@ -30,7 +30,7 @@ private:
   const bool doMuon ;
   std::map<std::string, TH1D> histmap;
 
-  TH1D& Hist( const std::string, const bool, const bool );
+  TH1D& Hist( const std::string&, const bool, const bool );
 
   void defineHist(
     const std::string& xname,
@@ -107,8 +107,8 @@ void EventHisto::defineHist(
     for( const auto y : {true,false} ){
       const std::string name = histname(xname,x,y);
       histmap[name] = TH1D( name.c_str(), name.c_str(), nbins, xmin, xmax );
-      histmap[name].GetXaxis()->SetTitle( XaxisTitle(xtitle,xunit) );
-      histmap[name].GetYaxis()->SetTitle( YaxisTitle(xunit,nbins,xmax,xmin) );
+      histmap[name].GetXaxis()->SetTitle( XaxisTitle(xtitle,xunit).c_str() );
+      histmap[name].GetYaxis()->SetTitle( YaxisTitle(xunit,nbins,xmin,xmax).c_str() );
     }
   }
 }
@@ -124,7 +124,8 @@ std::string EventHisto::histname(
   return cutlevel + "_" + x + "_" + tauisostr + "_" + osstr ;
 }
 
-TH1D& EventHisto( const std::string& x , const bool tauiso, const bool os )
+TH1D& EventHisto::Hist(
+  const std::string& x , const bool tauiso, const bool os )
 {
   return histmap.at( histname(x,tauiso,os) );
 }
@@ -147,7 +148,8 @@ public:
   ObjectHisto( const std::string& cutlevel, const bool domuon );
   ~ObjectHisto();
 
-  void Fill( const int tau, const int lep, const double eventweight );
+  void Fill( const double eventweight, const int tau = -1 , const int lep=-1 );
+  void Write();
 private:
   const std::string cutlevel;
   const bool doMuon;
@@ -159,9 +161,9 @@ private:
     const std::string& xname,
     const std::string& xtitle,
     const std::string& xunit,
-    const int    nbins,
-    const double xmin,
-    const double xmax
+    const unsigned     nbins,
+    const double       xmin,
+    const double       xmax
   );
 
   std::string histname( const std::string& );
@@ -179,16 +181,17 @@ ObjectHisto::ObjectHisto( const std::string& cutLevel, const bool domuon ):
   // TBC
 }
 
-ObjectHisto::~ObjectHisto() {}
-
-void ObjectHisto::Fill( const int tau, const int lep, const double eventweight )
+void ObjectHisto::Fill( const double eventweight, const int tau, const int iLep )
 {
   // Setting up variables
+  static const double muMass = 0.10565837;
+  static const double elMass = 0.000511  ;
   TLorentzVector tauP4, lepP4;
-  tauP4.SetPtEtaPhiM( tauPt->at(tau), tauEta->at(tau), tauPhi->at(tau), tauMass->at(tau) );
-  if( doMuon )
+  if( tau >= 0 )
+    tauP4.SetPtEtaPhiM( tauPt->at(tau), tauEta->at(tau), tauPhi->at(tau), tauMass->at(tau) );
+  if( doMuon && iLep >= 0 )
     lepP4.SetPtEtaPhiM( muPt->at(iLep), muEta->at(iLep), muPhi->at(iLep), muMass );
-  else
+  else if ( iLep >= 0 )
     lepP4.SetPtEtaPhiM( elePt->at(iLep), eleEta->at(iLep), elePhi->at(iLep), elMass );
 
   // Filling jet histograms
@@ -205,23 +208,44 @@ void ObjectHisto::Fill( const int tau, const int lep, const double eventweight )
 }
 
 /** END Histogram definition */
+ObjectHisto::~ObjectHisto() {}
 
+void ObjectHisto::Write()
+{
+  for( const auto& p : histmap ){
+    p.second.Write();
+  }
+}
 
-TH1D& ObjectHisto( const std::string& x )
+TH1D& ObjectHisto::Hist( const std::string& x )
 {
   return histmap.at(histname(x));
 }
-
 
 std::string ObjectHisto::histname( const std::string& xname )
 {
   return cutlevel + "_" + xname;
 }
 
+void ObjectHisto::defineHist(
+    const std::string& xname,
+    const std::string& xtitle,
+    const std::string& xunit,
+    const unsigned     nbins,
+    const double       xmin,
+    const double       xmax )
+
+{
+  const std::string name = histname(xname);
+  histmap[name] = TH1D( name.c_str(), name.c_str(), nbins, xmin, xmax );
+  histmap[name].GetXaxis()->SetTitle( XaxisTitle(xtitle,xunit).c_str() );
+  histmap[name].GetYaxis()->SetTitle( YaxisTitle(xunit,nbins,xmax,xmin).c_str() );
+}
+
 /////////////////////////////////////////////////////////////
 
 std::string XaxisTitle(
-    const std::string& title, const std::string& unit,
+    const std::string& title, const std::string& unit )
 {
   std::string ans = title ;
   if( unit != "" ){
@@ -232,7 +256,7 @@ std::string XaxisTitle(
 
 std::string YaxisTitle(
     const std::string& unit,
-    const int nbins, const double xmin, const double xmax  );
+    const int nbins, const double xmin, const double xmax  )
 {
   char ans[1024];
   const double binwidth = (xmax - xmin)/nbins;
