@@ -23,6 +23,11 @@ To run electron analysis:
 
 >./ZTT_XSection.exe electron/DYJetsToLL.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root electron 1 0
 
+Now make the QCD histograms
+
+>python makeQCD.py -f electron
+
+
 To run muon analysis:
 
 >mkdir muon
@@ -36,6 +41,17 @@ To run muon analysis:
 >./ZTT_XSection.exe muon/DYJetsToTauTau.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root muon 1 1
 
 >./ZTT_XSection.exe muon/DYJetsToLL.root root://131.225.204.161:1094//store/user/cmsdas/2019/long_exercises/ZTauTau/DYJetsToLL_M-50_Inc.root muon 1 0
+
+Now make the QCD histograms
+
+>python makeQCD.py -f muon
+
+And make a lot of plots (requires git clone git@github.com:patrickbryant/PlotTools.git in directory above this one)
+
+>python plotDump.py -f muon
+
+
+
 
 
 # Plot visible mass spectrum
