@@ -43,9 +43,11 @@ varLabels = {"LepEta": flavor+" #eta",
              "visEta": "visEta",
              "visMass": "Visible Mass [GeV]",
              "visPt": "Visible p_{T} [GeV]",
+             "DeltaPhiLepMET": "#Delta#phi(l, MET)",
+             "DeltaPhiTMET"  : "#Delta#phi(#tau_{h}, MET)",
+             "DeltaRJet"     : "Min[#DeltaR(#tau_{h}, jet)]",
+             "DeltaRLep"     : "Min[#DeltaR(#tau_{h}, l)]",
              }
-
-QCD_SS_to_OS_SF = 1.0
 
 for sel in ["BasicSelection"]:
     for iso in ["Iso","antiIso"]:
@@ -81,7 +83,7 @@ for sel in ["BasicSelection"]:
             samples[files["QCD"]][sel+"_"+var+"_"+iso+"_SS"] = {"label"    : "Multijet",
                                                                 "ratio"    : "denom A",
                                                                 "stack"    : 1,
-                                                                "weight"   :QCD_SS_to_OS_SF,
+                                                                #"weight"   :QCD_SS_to_OS_SF[o.flavor],#already scaled in makeQCD.py
                                                                 "color"    : colors["QCD"]}
 
             #define global plot parameters which are not specific to a given input histogram to the final pdf
