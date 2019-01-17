@@ -242,13 +242,13 @@ void ObjectHisto::Fill( const double eventweight, const int tau, const int iLep 
 
   // Muon histograms
   for( int i = 0 ; i < nMu ; ++i ){
-    Hist("MuonPt").Fill( muPt->at(0), eventweight );
-    Hist("MuonEta").Fill( muEta->at(0), eventweight );
+    Hist("MuonPt").Fill( muPt->at(i), eventweight );
+    Hist("MuonEta").Fill( muEta->at(i), eventweight );
   }
 
   for( int i = 0 ; i < nEle; ++i ){
-    Hist("ElecPt").Fill( muPt->at(0), eventweight );
-    Hist("ElecEta").Fill( muEta->at(0), eventweight );
+    Hist("ElecPt").Fill( elePt->at(i), eventweight );
+    Hist("ElecEta").Fill( eleEta->at(i), eventweight );
   }
 
   if(iLep >=0 ){
