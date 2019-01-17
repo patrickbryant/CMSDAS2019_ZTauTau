@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
 
   //add the histrograms of lepton and tau visible mass (both for opposite sign and same sign pair )
   EventHisto basicselection("BasicSelection",doMuon);
+  EventHisto beforeTMassCut("BeforeTMassCut",doMuon);
   ObjectHisto noCut      ("NoCut", doMuon);
   ObjectHisto passTrigger("PassTrigger", doMuon);
   ObjectHisto passTau    ("PassTau", doMuon);
@@ -127,7 +128,7 @@ int main(int argc, char** argv) {
       int numTau=0;
       for(int igen=0;igen < nMC; igen++){
 	if(fabs(mcPID->at(igen)) == 15 && mcMomPID->at(igen)==23) numTau++;
-	if(fabs(mcPID->at(igen)) == 11 && mcMomPID->at(igen)==23) doEleScale = true;
+	if(fabs(mcPID->at(igen)) == 11 && mcMomPID->at(igen)==23 && !selTauTau) doEleScale = true;
       }
       if( selTauTau && (numTau < 1)) continue; // uncomment this line to get Ztautau contribution of DY
       if(!selTauTau && (numTau > 1)) continue; // uncomment this line to get Zll contribution of DY
@@ -144,6 +145,9 @@ int main(int argc, char** argv) {
       PUWeight= PUData_/PUMC_;
     }
     float eventWeight       = LumiWeight*PUWeight;
+    
+    //Tau tag efficiancy scale factor applied to z->tautau events
+    if(splitTauTau && selTauTau) eventWeight *= 0.9;
 
     noCut.Fill( eventWeight );
 
@@ -183,13 +187,29 @@ int main(int argc, char** argv) {
     //float pfMET_corrected = pfMET*cos()
 
     if(doEleScale){//Apply scale factor to events that are truth Z->ee
+      TLorentzVector METP4 = TLorentzVector();
+      METP4.SetPxPyPzE(pfMET*cos(pfMETPhi), pfMET*sin(pfMETPhi), 0, 0);
+      METP4 += 0.1*TauP4;
+      pfMET = METP4.Pt();
+      pfMETPhi = METP4.Phi();
       TauP4 *= 1.1;
+      tauPt->at(itau)   = TauP4.Pt();
+      tauEta->at(itau)  = TauP4.Eta();
+      tauPhi->at(itau)  = TauP4.Phi();
+      tauMass->at(itau) = TauP4.M();
+      
       if (abs(TauP4.Eta())<1.44) {
 	eventWeight *= 1.4;
       } else if (abs(TauP4.Eta())>1.44 && abs(TauP4.Eta())<2.5){
 	eventWeight *= 1.9;
       }
     }
+
+    //ttbar veto with bjet veto
+    if(GetBJets()) { continue; }
+    nPassBVeto += 1;
+
+    beforeTMassCut.Fill( itau, iLep, eventWeight );
 
     //Reject W+Jets
     float LepMetTranverseMass;
@@ -203,20 +223,17 @@ int main(int argc, char** argv) {
     passTau.Fill(eventWeight);
 
 
-    //ttbar veto with bjet veto
-    if(GetBJets()) { continue; }
-    nPassBVeto += 1;
-
 
     // Construct the visible mu+tau system
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
     if(debug) cout << "Fill basicselection" << endl;
-    basicselection.Fill( itau, TauP4, iLep, eventWeight );
+    basicselection.Fill( itau, iLep, eventWeight );
 
   } //End Event Loop
 
   //end of analysis code, close and write histograms/file
   fout->cd();
+  beforeTMassCut.Write();
   basicselection.Write();
   noCut         .Write();
   passTrigger   .Write();
@@ -228,8 +245,8 @@ int main(int argc, char** argv) {
   std::cout << "nPassLep: " << nPassLep << std::endl;
   std::cout << "nPassDYVeto: " << nPassDYVeto << std::endl;
   std::cout << "nPassTau: " << nPassTau << std::endl;
-  std::cout << "nPassLepMET: " << nPassLepMET << std::endl;
   std::cout << "nPassBVeto: " << nPassBVeto << std::endl;
+  std::cout << "nPassLepMET: " << nPassLepMET << std::endl;
 
 }
 
@@ -379,10 +396,14 @@ int GetPriMuon()
     if(muPt->at(imu) < 30) continue;
     if(fabs(muEta->at(imu)) > 2.1) continue;
 
-    //compute isolation
-    float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
-    if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
-     IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
+
+    float IsoMu(muPFChIso->at(imu) / muPt->at(imu));
+    IsoMu += std::max(0., (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5 * muPFPUIso->at(imu)) / muPt->at(imu));
+
+    // //compute isolation
+    // float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
+    // if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
+    //  IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
     //check isolation
     //if(IsoMu > 0.15) continue;//tight
     if(IsoMu > 0.30) continue;//loose

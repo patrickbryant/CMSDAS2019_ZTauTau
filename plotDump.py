@@ -21,6 +21,10 @@ o, a = parser.parse_args()
 #First define the list of samples. Is a dictionary where the key is the file path/name and the 
 #value is a dictionary where the keys are TObjects in th file and the values are dictionaris with parameters for the corresponding TObject
 flavor=o.flavor
+
+wjetsScale = {"electron":1.03591121643,
+                  "muon":1.00807214074}
+
 files={"data": flavor+"/data.root",
        "QCD": flavor+"/QCD.root",
        "WJets": flavor+"/WJetsToLNu.root",
@@ -49,7 +53,7 @@ varLabels = {"LepEta": flavor+" #eta",
              "DeltaRLep"     : "Min[#DeltaR(#tau_{h}, l)]",
              }
 
-for sel in ["BasicSelection"]:
+for sel in ["BeforeTMassCut","BasicSelection"]:
     for iso in ["Iso","antiIso"]:
         for var, label in varLabels.items():
             samples=collections.OrderedDict()
@@ -63,6 +67,7 @@ for sel in ["BasicSelection"]:
             samples[files["DY"]][sel+"_"+var+"_"+iso+"_OS"] = {"label"    : "Z/#gamma^{*} #rightarrow #tau^{+}#tau^{-}",
                                                                "ratio"    : "denom A",
                                                                "stack"    : 5,
+                                                               #"weight"   : 0.9 if iso == "Iso" else 1.0,
                                                                "color"    : colors["DY"]}
             samples[files["ZLL"]] = collections.OrderedDict()
             samples[files["ZLL"]][sel+"_"+var+"_"+iso+"_OS"] = {"label"    : "Z/#gamma^{*} #rightarrow l^{+}l^{-}",
@@ -70,7 +75,7 @@ for sel in ["BasicSelection"]:
                                                                 "stack"    : 4,
                                                                 "color"    : colors["ZLL"]}
             samples[files["TTJets"]] = collections.OrderedDict()
-            samples[files["TTJets"]][sel+"_"+var+"_"+iso+"_OS"] = {"label"    : "W+Jets",
+            samples[files["TTJets"]][sel+"_"+var+"_"+iso+"_OS"] = {"label"    : "t#bar{t}",
                                                                    "ratio"    : "denom A",
                                                                    "stack"    : 3,
                                                                    "color"    : colors["TTJets"]}
@@ -78,6 +83,7 @@ for sel in ["BasicSelection"]:
             samples[files["WJets"]][sel+"_"+var+"_"+iso+"_OS"] = {"label"    : "W+Jets",
                                                                   "ratio"    : "denom A",
                                                                   "stack"    : 2,
+                                                                  "weight"   : wjetsScale[o.flavor],
                                                                   "color"    : colors["WJets"]}
             samples[files["QCD"]] = collections.OrderedDict()
             samples[files["QCD"]][sel+"_"+var+"_"+iso+"_SS"] = {"label"    : "Multijet",
