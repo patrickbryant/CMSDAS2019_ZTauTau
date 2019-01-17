@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
 
 
   //add the histrograms of lepton and tau visible mass (both for opposite sign and same sign pair )
+  EventHisto beforeTMass("BeforeTMass",doMuon);
   EventHisto basicselection("BasicSelection",doMuon);
   ObjectHisto noCut      ("NoCut", doMuon);
   ObjectHisto passTrigger("PassTrigger", doMuon);
@@ -190,7 +191,12 @@ int main(int argc, char** argv) {
 	eventWeight *= 1.9;
       }
     }
+    //ttbar veto with bjet veto
+    if(GetBJets()) { continue; }
+    nPassBVeto += 1;
 
+
+    beforeTMass.Fill( itau, TauP4, iLep, eventWeight );
     //Reject W+Jets
     float LepMetTranverseMass;
     if(doMuon){
@@ -203,9 +209,6 @@ int main(int argc, char** argv) {
     passTau.Fill(eventWeight);
 
 
-    //ttbar veto with bjet veto
-    if(GetBJets()) { continue; }
-    nPassBVeto += 1;
 
 
     // Construct the visible mu+tau system
@@ -217,6 +220,7 @@ int main(int argc, char** argv) {
 
   //end of analysis code, close and write histograms/file
   fout->cd();
+  beforeTMass.Write();
   basicselection.Write();
   noCut         .Write();
   passTrigger   .Write();

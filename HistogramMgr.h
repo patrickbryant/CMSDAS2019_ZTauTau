@@ -270,7 +270,7 @@ cutlevel(x), doMuon(y)
   defineHist("TauPt",    "#tau p_{T}", "GeV", 20, 0 , 200 );
   defineHist("TauEta",   "#tau p_{T}", "GeV", 20, 0 , 200 );
   defineHist("MET",      "MET", "GeV", 20, 0 , 200 );
-  defineHist("LepTMass", "Lepton Transverse Mass", "GeV", 20, 0, 50 );
+  defineHist("LepTMass", "Lepton Transverse Mass", "GeV", 20, 0, 150 );
   defineHist("DeltaRLep", "#Delta R(#tau,l)", "", 62,0,6.2);
   defineHist("DeltaRJet", "#Delta R_{min}(#tau,jet)", "",62,0,6.2);
   defineHist("DeltaPhiTMET","#Delta #phi(#tau,MET)", "", 62,-3.2,3.2);
