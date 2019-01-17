@@ -187,7 +187,7 @@ def xs_calculator(fileList = [], mass_low = 25, mass_high = 125, nbins = 50, var
     #histDict['ZLL_OST'].Scale(2)
     #print 'Hello 2222', histDict['ZLL_OST'].Integral()
     #plot
-    pdf = 'xs.pdf'
+    pdf = dirName+'/xs.pdf'
     c = r.TCanvas("c","Test", 800, 800)
     p_coords = [0., 1, 1., 0.3]
     p_r_coords = [0.,0.3,1.,0.06]
@@ -262,6 +262,6 @@ fileList = [('DY', '%s/DYJetsToTauTau.root' %dirName),
             ('data', '%s/data.root' %dirName),
             ]
 
-variableName = ""
+variableName = "BasicSelection_visMass_Iso_"
 bining = []
-xs_calculator(fileList, 40, 120, 30, "visibleMass", [30, 0, 300])
+xs_calculator(fileList, 40, 120, 30, variableName, [30, 0, 300])
