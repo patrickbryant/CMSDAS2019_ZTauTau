@@ -75,3 +75,24 @@ print " data:",f_data
 print "  qcd:",f_qcd
 subtract()
 f_qcd.Close()
+
+
+print "Compute SS to OS scale factor using antiIso selection"
+f_qcd   = ROOT.TFile(o.flavor+"/"+o.qcdFile,"READ")
+#use a variable that has the full event yield
+
+var="BasicSelection_visMass_antiIso"
+h_SS = f_qcd.Get(var+"_SS")
+h_OS = f_qcd.Get(var+"_OS")
+
+e_SS = ROOT.Double(0)
+e_OS = ROOT.Double(0)
+n_SS = h_SS.IntegralAndError(0, h_SS.GetSize()-1, e_SS)
+n_OS = h_OS.IntegralAndError(0, h_OS.GetSize()-1, e_OS)
+
+print "SS =",n_SS,"+/-",e_SS
+print "OS =",n_OS,"+/-",e_OS
+
+r = n_OS/n_SS
+e = ((e_OS*1.0/n_SS)**2 + (e_SS*n_OS/n_SS**2)**2)**0.5
+print "QCD_SS_to_OS_SF =",r,"+/-",e

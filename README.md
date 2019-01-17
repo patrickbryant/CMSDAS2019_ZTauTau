@@ -29,7 +29,7 @@ Now make the QCD histograms
 
 And make a lot of plots (requires git clone git@github.com:patrickbryant/PlotTools.git in directory above this one)
 
->python plotDump.py -f muon
+>python plotDump.py -f electron
 
 
 To run muon analysis:
