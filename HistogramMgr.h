@@ -78,7 +78,7 @@ void EventHisto::Fill( const int tau, const int iLep, const double evtweight )
     lepP4.SetPtEtaPhiM( elePt->at(iLep), eleEta->at(iLep), elePhi->at(iLep), elMass );
   const TLorentzVector zP4 = tauP4 + lepP4;
 
-  const bool tauiso = tauByTightIsolationMVArun2v1DBoldDMwLT ->at(tau) < 0.5 ;
+  const bool tauiso = tauByTightIsolationMVArun2v1DBoldDMwLT ->at(tau) > 0.5 ;
   const bool os =
     doMuon ?  ( muCharge->at(iLep) * tauCharge->at(tau)  < 0 ) :
               ( eleCharge->at(iLep) * tauCharge->at(tau)  < 0 ) ;
