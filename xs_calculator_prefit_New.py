@@ -156,7 +156,7 @@ def xs_calculator(fileList = [], mass_low = 25, mass_high = 125, nbins = 50, var
         ifile = r.TFile(iFileLocation)
 
         weight = -1.0
-        tauWeight = 0.9
+        tauWeight = 1.0
         if isData:
             weight = 1.0
             tauWeight = 1.0
