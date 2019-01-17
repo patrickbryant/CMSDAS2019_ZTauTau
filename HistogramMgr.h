@@ -91,11 +91,16 @@ void EventHisto::defineHist(
     const unsigned     nbins,
     const double       xmin,
     const double       xmax )
+
 {
-  const std::string osname = cutlevel + xname  + "OS";
-  const std::string ssname = cutlevel + xname  + "SS";
-  histmap[osname] = TH1D( osname.c_str(), osname.c_str(), nbins, xmin, xmax );
-  histmap[ssname] = TH1D( ssname.c_str(), ssname.c_str(), nbins, xmin, xmax );
+  const std::string is_os_name = histname(xname,true,true);
+  const std::string as_os_name = histname(xname,false,true);
+  const std::string is_ss_name = histname(xname,true,false);
+  const std::string as_ss_name = histname(xname,false,false);
+  histmap[is_os_name] = TH1D( is_os_name.c_str(), is_os_name.c_str(), nbins, xmin, xmax );
+  histmap[as_os_name] = TH1D( as_os_name.c_str(), as_os_name.c_str(), nbins, xmin, xmax );
+  histmap[is_ss_name] = TH1D( is_ss_name.c_str(), is_ss_name.c_str(), nbins, xmin, xmax );
+  histmap[as_ss_name] = TH1D( as_ss_name.c_str(), as_ss_name.c_str(), nbins, xmin, xmax );
 }
 
 std::string EventHisto::histname(
