@@ -251,7 +251,7 @@ private:
 
   std::string histname(
     const std::string& name,
-    const bool tauiso,
+    const bool lepiso,
     const bool os
     );
 };
@@ -284,14 +284,28 @@ void EventHisto::Fill( const int tau, TLorentzVector tauP4, const int iLep, cons
 
   TLorentzVector lepP4, METP4;
   //tauP4.SetPtEtaPhiM( tauPt->at(tau), tauEta->at(tau), tauPhi->at(tau), tauMass->at(tau) );
-  if( doMuon )
+  bool lepiso = false;
+  if( doMuon ){
     lepP4.SetPtEtaPhiM( muPt->at(iLep), muEta->at(iLep), muPhi->at(iLep), muMass );
-  else
+    //compute isolation
+    float IsoMu=muPFChIso->at(iLep)/muPt->at(iLep);
+    if ( (muPFNeuIso->at(iLep) + muPFPhoIso->at(iLep) - 0.5* muPFPUIso->at(iLep) )  > 0.0)
+      IsoMu= ( muPFChIso->at(iLep)/muPt->at(iLep) + muPFNeuIso->at(iLep) + muPFPhoIso->at(iLep) - 0.5* muPFPUIso->at(iLep))/muPt->at(iLep);
+    //check isolation
+    lepiso = (IsoMu < 0.15);//tight
+  }else{
     lepP4.SetPtEtaPhiM( elePt->at(iLep), eleEta->at(iLep), elePhi->at(iLep), elMass );
+    lepiso =
+      fabs(eleSCEta->at(iLep)) <= 0.8 && eleIDMVA->at(iLep) > 0.941  ? true :
+      fabs(eleSCEta->at(iLep)) >  0.8 && fabs(eleSCEta->at(iLep)) <=  1.5 && eleIDMVA->at(iLep) >   0.899 ? true :
+      fabs(eleSCEta->at(iLep)) >=  1.5 && eleIDMVA->at(iLep) >  0.758 ?  true :
+      false;
+  }
   const TLorentzVector zP4 = tauP4 + lepP4;
   METP4.SetPtEtaPhiE(pfMET,0,pfMETPhi,pfMET);
 
-  const bool tauiso = tauByTightIsolationMVArun2v1DBoldDMwLT ->at(tau) > 0.5 ;
+  //const bool tauiso = tauByTightIsolationMVArun2v1DBoldDMwLT ->at(tau) > 0.5 ;
+
   const bool os =
     doMuon ?  ( muCharge->at(iLep) * tauCharge->at(tau)  < 0 ) :
               ( eleCharge->at(iLep) * tauCharge->at(tau)  < 0 ) ;
@@ -299,20 +313,20 @@ void EventHisto::Fill( const int tau, TLorentzVector tauP4, const int iLep, cons
   const double tmass = TMass_F( lepP4.Pt(), lepP4.Px(), lepP4.Py(), pfMET, pfMETPhi );
 
   // Begin filling
-  Hist("visMass",tauiso,os).Fill( zP4.M(), evtweight );
-  Hist("visPt"  ,tauiso,os).Fill( zP4.Pt(), evtweight );
-  Hist("visEta" ,tauiso,os).Fill( zP4.Eta(), evtweight );
+  Hist("visMass",lepiso,os).Fill( zP4.M(), evtweight );
+  Hist("visPt"  ,lepiso,os).Fill( zP4.Pt(), evtweight );
+  Hist("visEta" ,lepiso,os).Fill( zP4.Eta(), evtweight );
 
-  Hist("LepPt", tauiso, os).Fill( lepP4.Pt(),evtweight );
-  Hist("LepEta", tauiso, os).Fill( lepP4.Eta(), evtweight );
-  Hist("TauPt",tauiso, os).Fill( tauP4.Pt(), evtweight );
-  Hist("TauEta", tauiso, os).Fill( tauP4.Pt(), evtweight );
-  Hist("LepTMass", tauiso, os).Fill( tmass, evtweight );
+  Hist("LepPt", lepiso, os).Fill( lepP4.Pt(),evtweight );
+  Hist("LepEta", lepiso, os).Fill( lepP4.Eta(), evtweight );
+  Hist("TauPt",lepiso, os).Fill( tauP4.Pt(), evtweight );
+  Hist("TauEta", lepiso, os).Fill( tauP4.Pt(), evtweight );
+  Hist("LepTMass", lepiso, os).Fill( tmass, evtweight );
 
   // angle variables
-  Hist("DeltaRLep",tauiso,os).Fill( tauP4.DeltaR(lepP4), evtweight );
-  Hist("DeltaPhiTMET",tauiso,os).Fill( tauP4.DeltaPhi(METP4), evtweight );
-  Hist("DeltaPhiLepMET",tauiso,os).Fill( lepP4.DeltaPhi(METP4), evtweight );
+  Hist("DeltaRLep",lepiso,os).Fill( tauP4.DeltaR(lepP4), evtweight );
+  Hist("DeltaPhiTMET",lepiso,os).Fill( tauP4.DeltaPhi(METP4), evtweight );
+  Hist("DeltaPhiLepMET",lepiso,os).Fill( lepP4.DeltaPhi(METP4), evtweight );
 
   double mindeltaR = 1000;
   for( int i = 0 ; i < nJet ; ++i ){
@@ -321,7 +335,7 @@ void EventHisto::Fill( const int tau, TLorentzVector tauP4, const int iLep, cons
     mindeltaR = std::min( jetp4.DeltaR( tauP4 ), mindeltaR );
   }
   if( mindeltaR < 1000 ) {
-    Hist("DeltaRJet", tauiso, os).Fill(mindeltaR, evtweight );
+    Hist("DeltaRJet", lepiso, os).Fill(mindeltaR, evtweight );
   }
 }
 
@@ -348,19 +362,19 @@ void EventHisto::defineHist(
 
 std::string EventHisto::histname(
   const std::string& x,
-  const bool tauiso,
+  const bool lepiso,
   const bool os
 )
 {
-  const std::string tauisostr = tauiso ? "Iso" : "antiIso" ;
+  const std::string lepisostr = lepiso ? "Iso" : "antiIso" ;
   const std::string osstr     = os ? "OS" : "SS";
-  return cutlevel + "_" + x + "_" + tauisostr + "_" + osstr ;
+  return cutlevel + "_" + x + "_" + lepisostr + "_" + osstr ;
 }
 
 TH1D& EventHisto::Hist(
-  const std::string& x , const bool tauiso, const bool os )
+  const std::string& x , const bool lepiso, const bool os )
 {
-  return histmap.at( histname(x,tauiso,os) );
+  return histmap.at( histname(x,lepiso,os) );
 }
 
 

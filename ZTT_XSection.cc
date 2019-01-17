@@ -358,7 +358,7 @@ int GetTauID()
       if(tauByLooseMuonRejection3               ->at(itau) < 0.5) continue;
       if(tauByMVA6TightElectronRejection        ->at(itau) < 0.5) continue;
     }
-    //if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
+    if(tauByTightIsolationMVArun2v1DBoldDMwLT   ->at(itau) < 0.5) continue;
     TauP4.SetPtEtaPhiM(tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),tauMass->at(itau));
     if(TauP4.DeltaR(LeptonP4) < 0.5) continue;
     nSelTaus += 1;
@@ -382,9 +382,10 @@ int GetPriMuon()
     //compute isolation
     float IsoMu=muPFChIso->at(imu)/muPt->at(imu);
     if ( (muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu) )  > 0.0)
-      IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
+     IsoMu= ( muPFChIso->at(imu)/muPt->at(imu) + muPFNeuIso->at(imu) + muPFPhoIso->at(imu) - 0.5* muPFPUIso->at(imu))/muPt->at(imu);
     //check isolation
-    if(IsoMu > 0.15) continue;
+    //if(IsoMu > 0.15) continue;//tight
+    if(IsoMu > 0.30) continue;//loose
 
     //Check Muon ID
     if( !(muIDbit->at(imu)>>1 & 1)) continue; // 2 is tight, 1 is medium
@@ -436,9 +437,9 @@ int GetPriElec()
 {
   for( int i = 0 ; i < nEle ; ++i ){
     const bool passid =
-      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.941  ? true :
-      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.899 ? true :
-      fabs (eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.758 ?  true :
+      fabs(eleSCEta->at(i)) <= 0.8 && eleIDMVA->at(i) > 0.837  ? true :
+      fabs(eleSCEta->at(i)) >  0.8 && fabs(eleSCEta->at(i)) <=  1.5 && eleIDMVA->at(i) >   0.715 ? true :
+      fabs(eleSCEta->at(i)) >=  1.5 && eleIDMVA->at(i) >  0.357 ?  true :
       false;
     if( passid
         && elePt->at(i) > 30
