@@ -47,7 +47,7 @@ varLabels = {"LepEta": flavor+" #eta",
 
 QCD_SS_to_OS_SF = 1.0
 
-for sel in ["BasicSelection"]:
+for sel in ["BasicSelection","BeforeTMass"]:
     for iso in ["Iso","antiIso"]:
         for var, label in varLabels.items():
             samples=collections.OrderedDict()
