@@ -25,6 +25,7 @@ bool GetBJets();
 
 TLorentzVector LeptonP4;
 TLorentzVector TauP4;
+//TLorentzVector pfMETP4;
 
 bool doMuon = true;
 bool debug  = false;
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
   }
 
   if(argc>6){
-    std::string debugString = *(argv + 5);
+    std::string debugString = *(argv + 6);
     debug = debugString == "1";
   }
 
@@ -108,6 +109,8 @@ int main(int argc, char** argv) {
   // Loop over all events in the TTree.
   auto nentries_wtn = Run_Tree->GetEntries();
   for(auto ievt = 0; ievt < nentries_wtn; ievt++){
+    if(debug) cout << "ievt " << ievt << endl;
+
     //Print Status
     if((ievt+1)%1000 == 0) {
       duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
@@ -118,10 +121,13 @@ int main(int argc, char** argv) {
     Run_Tree->GetEntry(ievt);  // read this event
 
     //Check if we want to only look at truth tau tau events
+    bool doEleScale = false;
     if(splitTauTau){
+      if(debug) cout << "in splitTauTau check" << endl;
       int numTau=0;
       for(int igen=0;igen < nMC; igen++){
 	if(fabs(mcPID->at(igen)) == 15 && mcMomPID->at(igen)==23) numTau++;
+	if(fabs(mcPID->at(igen)) == 11 && mcMomPID->at(igen)==23) doEleScale = true;
       }
       if( selTauTau && (numTau < 1)) continue; // uncomment this line to get Ztautau contribution of DY
       if(!selTauTau && (numTau > 1)) continue; // uncomment this line to get Zll contribution of DY
@@ -174,6 +180,16 @@ int main(int argc, char** argv) {
     TauP4.SetPtEtaPhiM(
         tauPt->at(itau),tauEta->at(itau),tauPhi->at(itau),
         tauMass->at(itau));
+    //float pfMET_corrected = pfMET*cos()
+
+    if(doEleScale){//Apply scale factor to events that are truth Z->ee
+      TauP4 *= 1.1;
+      if (abs(TauP4.Eta())<1.44) {
+	eventWeight *= 1.4;
+      } else if (abs(TauP4.Eta())>1.44 && abs(TauP4.Eta())<2.5){
+	eventWeight *= 1.9;
+      }
+    }
 
     //Reject W+Jets
     float LepMetTranverseMass;
@@ -194,8 +210,8 @@ int main(int argc, char** argv) {
 
     // Construct the visible mu+tau system
     TLorentzVector LepTauP4 = LeptonP4 + TauP4;
-
-    basicselection.Fill( itau, iLep, eventWeight );
+    if(debug) cout << "Fill basicselection" << endl;
+    basicselection.Fill( itau, TauP4, iLep, eventWeight );
 
   } //End Event Loop
 
