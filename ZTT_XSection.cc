@@ -308,6 +308,7 @@ void registerBranches(TTree *tree) {
   initBranch(tree,"jetPt",&jetPt);
   initBranch(tree,"jetEta",&jetEta);
   initBranch(tree,"jetPhi",&jetPhi);
+  initBranch(tree,"jetEn",&jetEn);
   initBranch(tree,"jetCSV2BJetTags",&jetCSV2BJetTags);
   initBranch(tree,"jetPFLooseId",&jetPFLooseId);
   initBranch(tree,"jetPUID",&jetPUID);
